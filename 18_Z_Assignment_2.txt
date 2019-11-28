@@ -1,0 +1,116 @@
+Learning Objectives:-
+Create the cron job in the cluster
+Allow the cron job to run successfully
+
+Problem Statement:-
+Your company has a simple data cleanup process that is run periodically for maintenance purposes. They would like to stop doing this manually in order to save time, so you have been asked to implement a cron job in the Kubernetes cluster to run this process. Create a cron job called cleanup-cronjob using the linuxacademycontent/data-cleanup:1 image. Have the job run every minute with the following cron expression: */1 * * * *.
+
+
+--------------------------------------------------------------------------------------------
+
+
+1. creating cleanup-cronjob yml file
+
+master $ vi cleanup-cronjob.yml
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cleanup-cronjob
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: my-cleanup
+            image: linuxacademycontent/data-cleanup:1
+          restartPolicy: OnFailure
+
+
+2. creating cronjob
+
+master $ kubectl apply -f cleanup-cronjob.yml
+cronjob.batch/cleanup-cronjob created
+
+
+3. get the list of pod
+
+master $ kubectl get po
+
+
+NAME                               READY   STATUS      RESTARTS   AGE
+cleanup-cronjob-1574884260-8djf5   0/1     Completed   0          24s
+
+4. get the list of cronjob
+
+master $ kubectl get cronjobs
+
+NAME              SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+cleanup-cronjob   */1 * * * *   False     0        51s             6m9s
+
+5. get the description of cleanup-cronjob
+
+
+master $ kubectl describe cronjob cleanup-cronjob
+Name:                          cleanup-cronjob
+Namespace:                     default
+Labels:                        <none>
+Annotations:                   kubectl.kubernetes.io/last-applied-configuration:
+                                 {"apiVersion":"batch/v1beta1","kind":"CronJob","metadata":{"annotations":{},"name":"cleanup-cronjob","namespace":"default"},"spec":{"concu...
+Schedule:                      */1 * * * *
+Concurrency Policy:            Forbid
+Suspend:                       False
+Successful Job History Limit:  824642284024
+Failed Job History Limit:      1
+Starting Deadline Seconds:     <unset>
+Selector:                      <unset>
+Parallelism:                   <unset>
+Completions:                   <unset>
+Pod Template:
+  Labels:  <none>
+  Containers:
+   my-cleanup:
+    Image:           linuxacademycontent/data-cleanup:1
+    Port:            <none>
+    Host Port:       <none>
+    Environment:     <none>
+    Mounts:          <none>
+  Volumes:           <none>
+Last Schedule Time:  Wed, 27 Nov 2019 19:58:00 +0000
+Active Jobs:         <none>
+Events:
+  Type    Reason            Age    From                Message
+  ----    ------            ----   ----                -------
+  Normal  SuccessfulCreate  7m35s  cronjob-controller  Created job cleanup-cronjob-1574884260
+  Normal  SawCompletedJob   7m15s  cronjob-controller  Saw completed job: cleanup-cronjob-1574884260
+  Normal  SuccessfulCreate  6m35s  cronjob-controller  Created job cleanup-cronjob-1574884320
+  Normal  SawCompletedJob   6m25s  cronjob-controller  Saw completed job: cleanup-cronjob-1574884320
+  Normal  SuccessfulDelete  6m25s  cronjob-controller  Deleted job cleanup-cronjob-1574884260
+  Normal  SuccessfulCreate  5m35s  cronjob-controller  Created job cleanup-cronjob-1574884380
+  Normal  SawCompletedJob   5m25s  cronjob-controller  Saw completed job: cleanup-cronjob-1574884380
+  Normal  SuccessfulDelete  5m25s  cronjob-controller  Deleted job cleanup-cronjob-1574884320
+  Normal  SuccessfulCreate  4m33s  cronjob-controller  Created job cleanup-cronjob-1574884440
+  Normal  SawCompletedJob   4m23s  cronjob-controller  Saw completed job: cleanup-cronjob-1574884440
+  Normal  SuccessfulDelete  4m23s  cronjob-controller  Deleted job cleanup-cronjob-1574884380
+  Normal  SuccessfulCreate  3m43s  cronjob-controller  Created job cleanup-cronjob-1574884500
+  Normal  SawCompletedJob   3m33s  cronjob-controller  Saw completed job: cleanup-cronjob-1574884500
+  Normal  SuccessfulDelete  3m33s  cronjob-controller  Deleted job cleanup-cronjob-1574884440
+  Normal  SuccessfulCreate  2m43s  cronjob-controller  Created job cleanup-cronjob-1574884560
+  Normal  SawCompletedJob   2m32s  cronjob-controller  Saw completed job: cleanup-cronjob-1574884560
+  Normal  SuccessfulDelete  2m32s  cronjob-controller  Deleted job cleanup-cronjob-1574884500
+  Normal  SuccessfulCreate  102s   cronjob-controller  Created job cleanup-cronjob-1574884620
+  Normal  SawCompletedJob   92s    cronjob-controller  Saw completed job: cleanup-cronjob-1574884620
+  Normal  SuccessfulDelete  92s    cronjob-controller  Deleted job cleanup-cronjob-1574884560
+  Normal  SuccessfulCreate  42s    cronjob-controller  Created job cleanup-cronjob-1574884680
+  Normal  SawCompletedJob   32s    cronjob-controller  Saw completed job: cleanup-cronjob-1574884680
+  Normal  SuccessfulDelete  32s    cronjob-controller  Deleted job cleanup-cronjob-1574884620
+
+
+in the given above events, cleanup-cronjob is created every minute
+
+

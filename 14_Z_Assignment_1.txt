@@ -1,0 +1,127 @@
+Learning Objectives:-
+Create a probe to detect and restart unhealthy containers.
+Create a probe to detect when the container is ready to service requests.
+
+
+Problem Statement:-
+Your company just finished releasing a candy-themed mobile game. So far, things are going well, and the back end services running in your Kubernetes cluster are servicing thousands of requests. However, there have been a few issues with the back end service.
+
+Container Health Issues
+
+The first issue is caused by application instances entering an unhealthy state and responding to user requests with error messages. Unfortunately, this state does not cause the container to stop, so the Kubernetes cluster is not able to detect this state and restart the container. Luckily, the application has an internal endpoint that can be used to detect whether or not it is healthy. This endpoint is /healthz on port 8081. Your first task will be to create a probe to check this endpoint periodically. If the endpoint returns an error or fails to respond, the probe will detect this and the cluster will restart the container.
+
+Container Startup Issues
+
+Another issue is caused by new pods when they are starting up. The application takes a few seconds after startup before it is ready to service requests. As a result, some users are getting error message during this brief time. To fix this, you will need to create another probe. To detect whether the application is ready, the probe should simply make a request to the root endpoint, /, on port 80. If this request succeeds, then the application is ready.
+
+There is already a pod descriptor in the home directory: ~/candy-service-pod.yml. Edit this file to add the probes, then create the pod in the cluster to test it.
+
+
+------------------------------------------------------------------------------------------
+
+
+
+
+master $ vi http-liveness.yml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    test: liveness
+  name: liveness-http
+spec:
+  containers:
+  - name: liveness
+    image: k8s.gcr.io/liveness
+    args:
+    - /server
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8081
+        httpHeaders:
+        - name: Custom-Header
+          value: Awesome
+      initialDelaySeconds: 3
+  restartPolicy: OnFailure 
+----------------------------------------------------
+
+master $ kubectl apply -f http-liveness.yml
+pod/liveness-http created
+
+----------------------------------------------------
+
+
+master $ kubectl get po
+NAME            READY   STATUS    RESTARTS   AGE
+liveness-http   1/1     Running   4          2m16s
+
+it got restarted after failure
+
+------------------------------------------------------
+
+
+master $ kubectl describe pod liveness-http
+Name:               liveness-http
+Namespace:          default
+Priority:           0
+PriorityClassName:  <none>
+Node:               node01/172.17.0.37
+Start Time:         Thu, 28 Nov 2019 01:11:14 +0000
+Labels:             test=liveness
+Annotations:        kubectl.kubernetes.io/last-applied-configuration:
+                      {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"labels":{"test":"liveness"},"name":"liveness-http","namespace":"default"},"s...
+Status:             Running
+IP:                 10.40.0.1
+Containers:
+  liveness:
+    Container ID:  docker://17d5d7b43944fa708ca4a2c9c31e3e7053dc81490670a7678405d5ecf5c7c40e
+    Image:         k8s.gcr.io/liveness
+    Image ID:      docker-pullable://k8s.gcr.io/liveness@sha256:1aef943db82cf1370d0504a51061fb082b4d351171b304ad194f6297c0bb726a
+    Port:          <none>
+    Host Port:     <none>
+    Args:
+      /server
+    State:          Running
+      Started:      Thu, 28 Nov 2019 01:15:04 +0000
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    2
+      Started:      Thu, 28 Nov 2019 01:14:33 +0000
+      Finished:     Thu, 28 Nov 2019 01:15:03 +0000
+    Ready:          True
+    Restart Count:  6
+    Liveness:       http-get http://:8081/healthz delay=3s timeout=1s period=10s #success=1 #failure=3
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-4q8bm (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  default-token-4q8bm:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-4q8bm
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type     Reason     Age                    From               Message
+  ----     ------     ----                   ----               -------
+  Normal   Scheduled  3m53s                  default-scheduler  Successfully assigned default/liveness-http to node01
+  Normal   Pulled     2m53s (x3 over 3m51s)  kubelet, node01    Successfully pulled image "k8s.gcr.io/liveness"
+  Normal   Created    2m53s (x3 over 3m51s)  kubelet, node01    Created container liveness
+  Normal   Started    2m52s (x3 over 3m51s)  kubelet, node01    Started container liveness
+  Normal   Pulling    2m23s (x4 over 3m52s)  kubelet, node01    Pulling image "k8s.gcr.io/liveness"
+  Warning  Unhealthy  2m23s (x9 over 3m43s)  kubelet, node01    Liveness probe failed: Get http://10.40.0.1:8081/healthz: dial tcp 10.40.0.1:8081: connect: connection refused
+  Normal   Killing    2m23s (x3 over 3m23s)  kubelet, node01    Container liveness failed liveness probe, will be restarted
+
+
+
+

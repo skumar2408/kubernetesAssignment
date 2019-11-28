@@ -1,0 +1,118 @@
+Learning Objectives:-
+Create a yaml file containing the pod spec for the nginx pod.
+Create the pod.
+
+
+Your company is getting ready to launch a new website, and they need you to set up an nginx web server in their Kubernetes cluster. The nginx server will need to be accessible via network in the future, so you will need to expose port 80 as a containerPort for the nginx container. Your team has also asked you to ensure that nginx runs in quiet mode for the time being to cut down on unnecessary log output. You can do this by setting the command to nginx and passing the following arg to the container: -g daemon off; -q. As this nginx server belongs to the Web team, you will need to create it in the team's web namespace.
+
+To summarize:
+
+Use the nginx container image.
+The container needs a containerPort of 80.
+Set the command to nginx
+Pass in the -g daemon off; -q args to run nginx in quiet mode.
+Create the pod in the web namespace.
+Once the pod is created, you should be able to find it with kubectl get pods -n web. Once the pod is created, you can get more information about its current status with kubectl describe pod nginx -n web.
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+1. creating nginx-web.yml file
+      master $ vi nginx-web.yml
+         
+           apiVersion: v1
+           kind: Pod
+           metadata:
+             name: nginx-web
+             labels:
+                app: web
+             namespace: web
+           spec:
+             containers:
+               - name: nginx-web
+                 image: nginx:latest
+                 command:
+                  - nginx
+                 args:
+                  - -g
+                  - "daemon off;"
+                  - -q
+                 ports:
+                  - containerPort: 80
+~
+~
+
+
+2. Creating namespace web
+    master $ kubectl create namespace web
+               namespace/web created
+
+3. creating pod nginx-web
+
+    master $ kubectl create -f nginx-web.yml
+                pod/nginx-web created
+4. Checking Status of pod
+
+   master $ kubectl get pod -n web
+       NAME        READY   STATUS    RESTARTS   AGE
+       nginx-web   1/1     Running   0          75s
+
+
+5. describe command to know the detail description of pod
+   master $ kubectl describe pod nginx-web -n web
+
+
+Name:               nginx-web
+Namespace:          web
+Priority:           0
+PriorityClassName:  <none>
+Node:               node01/172.17.0.21
+Start Time:         Wed, 27 Nov 2019 17:58:06 +0000
+Labels:             app=web
+Annotations:        <none>
+Status:             Running
+IP:                 10.44.0.1
+Containers:
+  nginx-web:
+    Container ID:  docker://f9985a6cdafa217cbc71ad38fd972a5db3f2e79eb9ebaf5037709a808f23137c
+    Image:         nginx:latest
+    Image ID:      docker-pullable://nginx@sha256:50cf965a6e08ec5784009d0fccb380fc479826b6e0e65684d9879170a9df8566
+    Port:          80/TCP
+    Host Port:     0/TCP
+    Command:
+      nginx
+    Args:
+      -g
+      daemon off;
+      -q
+    State:          Running
+      Started:      Wed, 27 Nov 2019 17:58:13 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-7726x (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  default-token-7726x:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-7726x
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  6m7s  default-scheduler  Successfully assigned web/nginx-web to node01
+  Normal  Pulling    6m7s  kubelet, node01    Pulling image "nginx:latest"
+  Normal  Pulled     6m1s  kubelet, node01    Successfully pulled image "nginx:latest"
+  Normal  Created    6m    kubelet, node01    Created container nginx-web
+  Normal  Started    6m    kubelet, node01    Started container nginx-web
