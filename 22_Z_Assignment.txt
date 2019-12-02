@@ -71,7 +71,7 @@ spec:
 
 apiVersion: v1
 kind: Pod
-metaData:
+metadata:
   name: mysql-pod
 spec:
   containers:
